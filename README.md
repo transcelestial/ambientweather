@@ -1,7 +1,7 @@
 # Ambientweather
 > Go client for the [Ambientweather](https://ambientweather.net/) service.
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/transcelestial/ambientweather/Test?label=tests&style=flat-square)](https://github.com/transcelestial/ambientweather/actions?query=workflow%3ATest)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/transcelestial/ambientweather/Test?label=test&style=flat-square)](https://github.com/transcelestial/ambientweather/actions?query=workflow%3ATest)
 
 ## Usage
 1. Generate an app and API key from your [account](https://ambientweather.net/account)
