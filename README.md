@@ -66,5 +66,6 @@ If you wish to contribute, please use the following guidelines:
 * Use [conventional commits](https://conventionalcommits.org/)
 * Use [effective Go](https://golang.org/doc/effective_go)
 
-## Credits
+## Credits/Contributors
 * [lrosenman/ambient](https://github.com/lrosenman/ambient)
+* [Darryl Tan](https://github.com/moobshake)
