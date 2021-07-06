@@ -1,5 +1,5 @@
 # Ambientweather
-> Go client for the [Ambientweather](https://ambientweather.net/) service.
+> Go client for the [Ambientweather](https://ambientweather.docs.apiary.io/) service.
 
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/transcelestial/ambientweather/Test?label=test&style=flat-square)](https://github.com/transcelestial/ambientweather/actions?query=workflow%3ATest)
 
