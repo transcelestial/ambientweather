@@ -14,26 +14,26 @@ const Version = "v1"
 const URL = "https://api.ambientweather.net/" + Version
 
 type Record struct {
-	Dateutc        int64     `json:"dateutc"`
-	Winddir        int       `json:"winddir"`
-	Windspeedmph   float64   `json:"windspeedmph"`
-	Windgustmph    float64   `json:"windgustmph"`
-	Maxdailygust   float64   `json:"maxdailygust"`
-	Tempf          float64   `json:"tempf"`
-	Battout        int       `json:"battout"`
+	DateUTC        int64     `json:"dateutc"`
+	WindDir        int       `json:"winddir"`
+	WindSpeedMph   float64   `json:"windspeedmph"`
+	WindGustMph    float64   `json:"windgustmph"`
+	MaxDailyGust   float64   `json:"maxdailygust"`
+	Temp           float64   `json:"tempf"`
+	BatteryOut     int       `json:"battout"`
 	Humidity       int       `json:"humidity"`
-	Hourlyrainin   float64   `json:"hourlyrainin"`
-	Eventrainin    float64   `json:"eventrainin"`
-	Dailyrainin    float64   `json:"dailyrainin"`
-	Weeklyrainin   float64   `json:"weeklyrainin"`
-	Monthlyrainin  float64   `json:"monthlyrainin"`
-	Yearlyrainin   float64   `json:"yearlyrainin"`
-	Totalrainin    float64   `json:"totalrainin"`
+	HourlyRain     float64   `json:"hourlyrainin"`
+	EventRain      float64   `json:"eventrainin"`
+	DailyRain      float64   `json:"dailyrainin"`
+	WeeklyRain     float64   `json:"weeklyrainin"`
+	MonthlyRain    float64   `json:"monthlyrainin"`
+	YearlyRain     float64   `json:"yearlyrainin"`
+	TotalRain      float64   `json:"totalrainin"`
 	Uv             int       `json:"uv"`
-	Solarradiation float64   `json:"solarradiation"`
-	Feelslike      float64   `json:"feelslike"`
-	Dewpoint       float64   `json:"dewpoint"`
-	Lastrain       time.Time `json:"lastrain"`
+	SolarRadiation float64   `json:"solarradiation"`
+	FeelsLike      float64   `json:"feelslike"`
+	DewPoint       float64   `json:"dewpoint"`
+	LastRain       time.Time `json:"lastrain"`
 	Tz             string    `json:"tz"`
 	Date           time.Time `json:"date"`
 }
@@ -62,7 +62,7 @@ type DeviceInfo struct {
 }
 
 type DeviceRecord struct {
-	Macaddress string     `json:"macaddress"`
+	MacAddress string     `json:"macaddress"`
 	Info       DeviceInfo `json:"info"`
 	LastData   Record     `json:"lastdata"`
 }
@@ -79,6 +79,7 @@ type Key struct {
 	apiKey         string
 }
 
+// NewKey creates a new key to use for authentication w/ the Ambientweather service.
 func NewKey(applicationKey string, apiKey string) Key {
 	return Key{applicationKey: applicationKey, apiKey: apiKey}
 }
@@ -102,57 +103,59 @@ func (Key *Key) SetAPIKey(apiKey string) {
 type DeviceParam func(*DeviceParams)
 
 type DeviceParams struct {
-	URL string
+	Address string
 }
 
-func SetURL(url string) DeviceParam {
+// SetAddress sets the address of the API.
+// Can be used for tests with httptest.
+func SetAddress(address string) DeviceParam {
 	return func(params *DeviceParams) {
-		params.URL = url
+		params.Address = address
 	}
 }
 
+// GetDevice queries device data from Ambientweather.
 func GetDevice(key Key, params ...DeviceParam) (APIDeviceResponse, error) {
 	var ar APIDeviceResponse
 
+	path := "/devices?applicationKey=" + key.applicationKey + "&apiKey=" + key.apiKey
 	dp := &DeviceParams{
-		URL: URL + "/devices?applicationKey=" + key.applicationKey + "&apiKey=" + key.apiKey,
+		Address: URL,
 	}
 	for _, p := range params {
 		p(dp)
 	}
 
 	startTime := time.Now()
-	resp, err := http.Get(dp.URL)
+	resp, err := http.Get(dp.Address + path)
 	ar.ResponseTime = time.Since(startTime)
 	if err != nil {
 		return ar, err
 	}
+
 	ar.HTTPResponseCode = resp.StatusCode
 	ar.JSONResponse, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return ar, err
 	}
+
 	switch resp.StatusCode {
 	case 200:
 	case 401:
-		{
-			return ar, errors.New("API/APP key not authorized")
-		}
-	case 429, 502, 503:
-		{
-			if resp.StatusCode >= 500 {
-				ar.JSONResponse, _ = json.Marshal(fmt.Sprintf("{\"errormessage\": \"HTTP Error Code: %d\"}", resp.StatusCode))
-			}
-			return ar, nil
-		}
+		return ar, errors.New("API/app key not authorized")
+	case 429:
+		// https://ambientweather.docs.apiary.io/#introduction/rate-limiting
+		return ar, errors.New("too many requests. rate limit exceeded")
+	case 502, 503:
+		return ar, errors.New("ambientweather service is unreachable")
 	default:
-		{
-			return ar, errors.New("bad non-200/429/502/503 Response Code")
-		}
+		return ar, fmt.Errorf("request failed with response code: %d", resp.StatusCode)
 	}
+
 	err = json.Unmarshal(ar.JSONResponse, &ar.DeviceRecords)
 	if err != nil {
-		return ar, err
+		return ar, fmt.Errorf("cannot parse body: %v", err)
 	}
+
 	return ar, nil
 }
